@@ -1,0 +1,863 @@
+html_content = """<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa Mental NIA 330 - Respuestas del Auditor a los Riesgos Valorados</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f8f9fa;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        #mindmap-circular {
+            width: 100%;
+            height: 100vh;
+            background: #f8f9fa;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Title */
+        .title-container {
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            z-index: 20;
+        }
+        
+        .title-container h1 {
+            margin: 0;
+            font-size: 26px;
+            color: #2c3e50;
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
+        
+        .title-container h1 span {
+            color: #9b59b6;
+        }
+        
+        .title-container p {
+            margin: 4px 0 0 0;
+            font-size: 12px;
+            color: #5d6d7e;
+        }
+        
+        /* SVG Connections */
+        .connections-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        /* Central Node */
+        .central-node {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 170px;
+            height: 170px;
+            background: linear-gradient(135deg, #1a5276, #2c3e50);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: white;
+            font-weight: bold;
+            font-size: 17px;
+            box-shadow: 0 8px 30px rgba(26,82,118,0.4);
+            z-index: 10;
+            border: 4px solid #5dade2;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .central-node:hover {
+            transform: translate(-50%, -50%) scale(1.05);
+        }
+        
+        .central-node small {
+            font-size: 10px;
+            font-weight: 400;
+            opacity: 0.9;
+        }
+        
+        /* Branch Nodes */
+        .branch-node {
+            position: absolute;
+            z-index: 10;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .branch-node .circle {
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+            border: 3px solid;
+            transition: all 0.3s ease;
+        }
+        
+        .branch-node:hover .circle {
+            transform: scale(1.08);
+        }
+        
+        .branch-red .circle {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+            border-color: #ff8787;
+            box-shadow: 0 6px 20px rgba(255,107,107,0.4);
+        }
+        
+        .branch-blue .circle {
+            background: linear-gradient(135deg, #17a2b8, #138496);
+            border-color: #5bc0de;
+            box-shadow: 0 6px 20px rgba(23,162,184,0.4);
+        }
+        
+        /* Child Nodes */
+        .child-node {
+            position: absolute;
+            z-index: 10;
+            cursor: pointer;
+            transition: opacity 0.3s ease;
+        }
+        
+        .child-content {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .child-content.right {
+            flex-direction: row-reverse;
+        }
+        
+        .info-icon {
+            width: 28px;
+            height: 28px;
+            background: #1a5276;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            box-shadow: 0 2px 6px rgba(26,82,118,0.3);
+            flex-shrink: 0;
+        }
+        
+        .pill {
+            width: 90px;
+            min-height: 40px;
+            background: linear-gradient(135deg, #7b68ee, #6a5acd);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: white;
+            font-size: 9px;
+            font-weight: 600;
+            box-shadow: 0 3px 10px rgba(123,104,238,0.3);
+            padding: 6px 8px;
+        }
+        
+        /* Eval Node */
+        .eval-node {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            cursor: pointer;
+        }
+        
+        .eval-pill {
+            width: 180px;
+            height: 60px;
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: white;
+            font-weight: bold;
+            font-size: 11px;
+            box-shadow: 0 6px 20px rgba(231,76,60,0.4);
+            border: 3px solid #ec7063;
+            transition: all 0.3s ease;
+        }
+        
+        .eval-node:hover .eval-pill {
+            transform: scale(1.05);
+        }
+        
+        /* Blur Overlay */
+        #blur-overlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            backdrop-filter: blur(6px);
+            background: rgba(248,249,250,0.4);
+            z-index: 50;
+            transition: all 0.4s ease;
+        }
+        
+        /* Side Panel */
+        #side-panel {
+            display: none;
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 420px;
+            height: 100%;
+            background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
+            z-index: 100;
+            box-shadow: -10px 0 40px rgba(0,0,0,0.15);
+            border-radius: 20px 0 0 20px;
+            overflow: hidden;
+            transition: transform 0.4s ease;
+            transform: translateX(100%);
+        }
+        
+        #side-panel.open {
+            transform: translateX(0);
+        }
+        
+        .panel-header {
+            padding: 20px 25px;
+            position: relative;
+            transition: background 0.3s ease;
+        }
+        
+        .panel-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        
+        .panel-close:hover {
+            background: rgba(255,255,255,0.4);
+        }
+        
+        .panel-title {
+            margin: 0;
+            color: white;
+            font-size: 18px;
+            padding-right: 40px;
+            line-height: 1.3;
+        }
+        
+        .panel-meta {
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .panel-badge {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            font-size: 10px;
+            padding: 3px 10px;
+            border-radius: 12px;
+        }
+        
+        .panel-counter {
+            color: rgba(255,255,255,0.7);
+            font-size: 11px;
+        }
+        
+        .panel-content {
+            padding: 25px;
+            color: #2c3e50;
+            font-size: 13.5px;
+            line-height: 1.8;
+            overflow-y: auto;
+            height: calc(100% - 180px);
+        }
+        
+        .panel-content::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .panel-content::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+        
+        .panel-content::-webkit-scrollbar-thumb {
+            background: #5dade2;
+            border-radius: 3px;
+        }
+        
+        .detail-section {
+            background: #f8f9fa;
+            border-left: 4px solid #5dade2;
+            padding: 12px 15px;
+            margin: 12px 0;
+            border-radius: 0 10px 10px 0;
+        }
+        
+        .detail-highlight {
+            background: linear-gradient(120deg, #ffeaa7 0%, #ffeaa7 100%);
+            background-repeat: no-repeat;
+            background-size: 100% 40%;
+            background-position: 0 88%;
+            padding: 0 4px;
+            font-weight: 600;
+        }
+        
+        /* Navigation */
+        .panel-nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 15px 25px;
+            background: #ffffff;
+            border-top: 1px solid #e8e8e8;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
+        }
+        
+        .nav-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .nav-btn-prev {
+            background: #f0f0f0;
+            color: #2c3e50;
+        }
+        
+        .nav-btn-prev:hover:not(:disabled) {
+            background: #e0e0e0;
+        }
+        
+        .nav-btn-next {
+            background: linear-gradient(135deg, #1a5276, #2c3e50);
+            color: white;
+        }
+        
+        .nav-btn-next:hover:not(:disabled) {
+            transform: scale(1.05);
+        }
+        
+        .nav-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        
+        .nav-dots {
+            display: flex;
+            gap: 6px;
+        }
+        
+        .nav-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #d0d0d0;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-dot.active {
+            background: #5dade2;
+            transform: scale(1.3);
+        }
+        
+        /* Animations */
+        @keyframes gentle-float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-4px); }
+        }
+        
+        .branch-node .circle {
+            animation: gentle-float 5s ease-in-out infinite;
+        }
+        
+        .branch-node:nth-child(2) .circle { animation-delay: 1s; }
+        .branch-node:nth-child(3) .circle { animation-delay: 2s; }
+        .branch-node:nth-child(4) .circle { animation-delay: 3s; }
+        
+        /* Responsive */
+        @media (max-width: 900px) {
+            #side-panel {
+                width: 100%;
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="mindmap-circular">
+        <!-- Title -->
+        <div class="title-container">
+            <h1>MAPA MENTAL <span>NIA 330</span></h1>
+            <p>Respuestas del Auditor a los Riesgos Valorados — Haz clic en cualquier círculo para explorar</p>
+        </div>
+        
+        <!-- SVG Connections -->
+        <svg class="connections-svg" viewBox="0 0 900 850" preserveAspectRatio="xMidYMid meet">
+            <path d="M 450 420 Q 320 300 240 230" stroke="#2c3e50" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <path d="M 450 420 Q 580 300 660 230" stroke="#2c3e50" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <path d="M 450 420 Q 320 540 240 610" stroke="#2c3e50" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <path d="M 450 420 Q 580 540 660 610" stroke="#2c3e50" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <path d="M 240 230 Q 160 160 100 120" stroke="#2c3e50" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <path d="M 240 230 Q 160 230 100 260" stroke="#2c3e50" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <path d="M 240 230 Q 140 300 80 380" stroke="#2c3e50" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <path d="M 660 230 Q 740 160 800 120" stroke="#2c3e50" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <path d="M 660 230 Q 740 230 800 260" stroke="#2c3e50" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <path d="M 660 230 Q 760 300 820 380" stroke="#2c3e50" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <path d="M 240 610 Q 160 680 100 720" stroke="#2c3e50" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <path d="M 240 610 Q 160 610 100 580" stroke="#2c3e50" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <path d="M 240 610 Q 140 540 80 460" stroke="#2c3e50" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <path d="M 660 610 Q 740 680 800 720" stroke="#2c3e50" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <path d="M 660 610 Q 740 610 800 580" stroke="#2c3e50" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <path d="M 660 610 Q 760 540 820 460" stroke="#2c3e50" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <path d="M 450 510 Q 450 650 450 740" stroke="#2c3e50" stroke-width="3" fill="none" stroke-linecap="round" stroke-dasharray="6,4"/>
+        </svg>
+        
+        <!-- CENTRAL NODE -->
+        <div class="central-node" onclick="resetAll()">
+            <span>NIA 330<br><small>Respuestas a<br>Riesgos Valorados</small></span>
+        </div>
+        
+        <!-- BRANCH 1: Respuestas Globales -->
+        <div class="branch-node branch-red" style="top: 21%; left: 19%;" onclick="openGroup('global')">
+            <div class="circle">
+                <span>🌍<br>Respuestas<br>Globales</span>
+            </div>
+        </div>
+        
+        <div class="child-node global-child" style="top: 10.5%; left: 2%;" onclick="showDetail('global1')">
+            <div class="child-content">
+                <div class="info-icon">i</div>
+                <div class="pill">Escepticismo profesional</div>
+            </div>
+        </div>
+        <div class="child-node global-child" style="top: 28%; left: 2%;" onclick="showDetail('global2')">
+            <div class="child-content">
+                <div class="info-icon">i</div>
+                <div class="pill">Personal con experiencia</div>
+            </div>
+        </div>
+        <div class="child-node global-child" style="top: 41%; left: 1%;" onclick="showDetail('global3')">
+            <div class="child-content">
+                <div class="info-icon">i</div>
+                <div class="pill">Imprevisibilidad</div>
+            </div>
+        </div>
+        
+        <!-- BRANCH 2: Procedimientos -->
+        <div class="branch-node branch-blue" style="top: 21%; right: 19%;" onclick="openGroup('proc')">
+            <div class="circle">
+                <span>📋<br>Procedimientos<br>de Auditoría</span>
+            </div>
+        </div>
+        
+        <div class="child-node proc-child" style="top: 10.5%; right: 2%;" onclick="showDetail('proc1')">
+            <div class="child-content right">
+                <div class="info-icon">i</div>
+                <div class="pill">Naturaleza de la prueba</div>
+            </div>
+        </div>
+        <div class="child-node proc-child" style="top: 28%; right: 2%;" onclick="showDetail('proc2')">
+            <div class="child-content right">
+                <div class="info-icon">i</div>
+                <div class="pill">Momento de realización</div>
+            </div>
+        </div>
+        <div class="child-node proc-child" style="top: 41%; right: 1%;" onclick="showDetail('proc3')">
+            <div class="child-content right">
+                <div class="info-icon">i</div>
+                <div class="pill">Extensión (tamaño muestra)</div>
+            </div>
+        </div>
+        
+        <!-- BRANCH 3: Pruebas de Controles -->
+        <div class="branch-node branch-red" style="bottom: 21%; left: 19%;" onclick="openGroup('control')">
+            <div class="circle">
+                <span>🛡️<br>Pruebas de<br>Controles</span>
+            </div>
+        </div>
+        
+        <div class="child-node control-child" style="bottom: 10.5%; left: 2%;" onclick="showDetail('control1')">
+            <div class="child-content">
+                <div class="info-icon">i</div>
+                <div class="pill">¿Confiar en controles?</div>
+            </div>
+        </div>
+        <div class="child-node control-child" style="bottom: 28%; left: 2%;" onclick="showDetail('control2')">
+            <div class="child-content">
+                <div class="info-icon">i</div>
+                <div class="pill">Eficacia operativa</div>
+            </div>
+        </div>
+        <div class="child-node control-child" style="bottom: 41%; left: 1%;" onclick="showDetail('control3')">
+            <div class="child-content">
+                <div class="info-icon">i</div>
+                <div class="pill">Riesgos significativos</div>
+            </div>
+        </div>
+        
+        <!-- BRANCH 4: Sustantivos -->
+        <div class="branch-node branch-blue" style="bottom: 21%; right: 19%;" onclick="openGroup('sust')">
+            <div class="circle">
+                <span>🔬<br>Procedimientos<br>Sustantivos</span>
+            </div>
+        </div>
+        
+        <div class="child-node sust-child" style="bottom: 10.5%; right: 2%;" onclick="showDetail('sust1')">
+            <div class="child-content right">
+                <div class="info-icon">i</div>
+                <div class="pill">Pruebas de detalle</div>
+            </div>
+        </div>
+        <div class="child-node sust-child" style="bottom: 28%; right: 2%;" onclick="showDetail('sust2')">
+            <div class="child-content right">
+                <div class="info-icon">i</div>
+                <div class="pill">Procedimientos analíticos</div>
+            </div>
+        </div>
+        <div class="child-node sust-child" style="bottom: 41%; right: 1%;" onclick="showDetail('sust3')">
+            <div class="child-content right">
+                <div class="info-icon">i</div>
+                <div class="pill">Confirmaciones externas</div>
+            </div>
+        </div>
+        
+        <!-- EVALUACIÓN -->
+        <div class="eval-node" onclick="openGroup('eval')">
+            <div class="eval-pill">
+                <span>📊 Evaluación de Evidencia y Documentación</span>
+            </div>
+        </div>
+        
+        <!-- BLUR OVERLAY -->
+        <div id="blur-overlay"></div>
+        
+        <!-- SIDE PANEL -->
+        <div id="side-panel">
+            <div class="panel-header" id="panel-header" style="background: linear-gradient(135deg, #1a5276, #2c3e50);">
+                <button class="panel-close" onclick="closePanel()">×</button>
+                <h3 class="panel-title" id="panel-title"></h3>
+                <div class="panel-meta">
+                    <span class="panel-badge" id="panel-badge"></span>
+                    <span class="panel-counter" id="panel-counter"></span>
+                </div>
+            </div>
+            <div class="panel-content" id="panel-content"></div>
+            <div class="panel-nav">
+                <button class="nav-btn nav-btn-prev" id="btn-prev" onclick="navigate(-1)">
+                    <span style="font-size: 16px;">←</span> Anterior
+                </button>
+                <div class="nav-dots" id="nav-dots"></div>
+                <button class="nav-btn nav-btn-next" id="btn-next" onclick="navigate(1)">
+                    Siguiente <span style="font-size: 16px;">→</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const details = [
+            {
+                key: 'global1',
+                group: 'global',
+                title: '🌍 Escepticismo Profesional',
+                badge: 'Respuestas Globales',
+                headerColor: 'linear-gradient(135deg, #ff6b6b, #ee5a5a)',
+                content: '<div class="detail-section"><b>📌 NIA 330 — Apartado A1</b></div>El auditor debe insistir ante el equipo del encargo en la necesidad de mantener el <span class="detail-highlight">escepticismo profesional</span> durante toda la auditoría.<br><br><b>🔑 Importancia clave:</b><br>Es una respuesta global ante riesgos valorados de incorrección material. No se trata de desconfianza ciega, sino de un <b>estado mental crítico</b> que cuestiona la evidencia y las afirmaciones de la dirección.<br><br><b>✅ Aplicación práctica:</b><br>• Cuestionar la información proporcionada por la dirección<br>• Investigar inconsistencias en la documentación<br>• No aceptar evidencia de auditoría de forma superficial<br>• Mantener alerta ante indicadores de fraude o error<br><br><b>🔗 Relación con el entorno de control:</b><br>Un entorno de control <b>ineficaz</b> requiere mayor escepticismo profesional. Las deficiencias en el entorno de control tienen el efecto opuesto: obligan al auditor a obtener evidencia más amplia a partir de procedimientos sustantivos.'
+            },
+            {
+                key: 'global2',
+                group: 'global',
+                title: '👥 Personal con Experiencia',
+                badge: 'Respuestas Globales',
+                headerColor: 'linear-gradient(135deg, #ff6b6b, #ee5a5a)',
+                content: '<div class="detail-section"><b>📌 NIA 330 — Apartado A1</b></div>Asignar empleados con <span class="detail-highlight">mayor experiencia</span> o con cualificaciones específicas, o recurrir a expertos.<br><br><b>🎯 ¿Cuándo aplicar?</b><br>Cuando los riesgos valorados son más altos o cuando se requieren habilidades técnicas especializadas que el equipo base no posee.<br><br><b>💼 Ejemplos prácticos:</b><br>• <b>Expertos en TI:</b> Para evaluar controles automatizados complejos<br>• <b>Especialistas en valuación:</b> Para instrumentos financieros derivados<br>• <b>Actuarios:</b> Para estimaciones de beneficios post-empleo<br>• <b>Ingenieros:</b> Para valoración de activos específicos<br><br><b>📈 Beneficio directo:</b><br>Mayor capacidad para detectar incorrecciones materiales que un equipo junior podría pasar por alto. La experiencia permite identificar señales de alerta sutiles.'
+            },
+            {
+                key: 'global3',
+                group: 'global',
+                title: '🎲 Elementos de Imprevisibilidad',
+                badge: 'Respuestas Globales',
+                headerColor: 'linear-gradient(135deg, #ff6b6b, #ee5a5a)',
+                content: '<div class="detail-section"><b>📌 NIA 330 — Apartado A1</b></div>Incorporar elementos adicionales de <span class="detail-highlight">imprevisibilidad</span> en la selección de los procedimientos de auditoría posteriores.<br><br><b>🎰 Ejemplos concretos:</b><br>• Cambiar ubicaciones de inventarios físicos a auditar de un año a otro<br>• Modificar el momento de realización de procedimientos (sin patrones predecibles)<br>• Aplicar procedimientos en fechas no esperadas por la dirección<br>• Usar diferentes métodos de selección de muestras cada periodo<br>• Realizar visitas sorpresa a ubicaciones remotas<br><br><b>🛡️ Objetivo estratégico:</b><br>Dificultar que la dirección anticipe los procedimientos del auditor, especialmente ante <b>riesgos de fraude</b>. Si la dirección conoce de antemano qué se auditará, podría ocultar irregularidades.<br><br><b>⚠️ Importante:</b><br>La imprevisibilidad es especialmente relevante cuando existen riesgos de incorrección intencionada o manipulación de estados financieros.'
+            },
+            {
+                key: 'proc1',
+                group: 'proc',
+                title: '🎯 Naturaleza de la Prueba',
+                badge: 'Procedimientos de Auditoría',
+                headerColor: 'linear-gradient(135deg, #17a2b8, #138496)',
+                content: '<div class="detail-section"><b>📌 NIA 330 — Apartados 6-7, A4-A10</b></div>La naturaleza se refiere al <span class="detail-highlight">objeto</span> de la prueba (control o sustantivo) y al <span class="detail-highlight">tipo</span> (inspección, observación, indagación, confirmación, recálculo, reejecución o procedimiento analítico).<br><br><b>🔧 Factores determinantes:</b><br>• <b>Riesgo inherente:</b> Características específicas del tipo de transacción/saldo<br>• <b>Riesgo de control:</b> Si se confía en controles internos<br>• <b>Características de la afirmación:</b> Existencia, integridad, valoración, etc.<br><br><b>📊 Ejemplo práctico:</b><br>Para <b>ingresos</b>:<br>• Las <b>pruebas de controles</b> responden mejor al riesgo de <b>integridad</b> (¿se registraron todas las ventas?)<br>• Los <b>procedimientos sustantivos</b> responden mejor al riesgo de <b>ocurrencia</b> (¿las ventas registradas son reales?)<br><br><b>💡 Tip:</b> Si el riesgo se valora como "más bajo" debido a controles, el auditor DEBE probar dichos controles (Apartado 8a).'
+            },
+            {
+                key: 'proc2',
+                group: 'proc',
+                title: '⏰ Momento de Realización',
+                badge: 'Procedimientos de Auditoría',
+                headerColor: 'linear-gradient(135deg, #17a2b8, #138496)',
+                content: '<div class="detail-section"><b>📌 NIA 330 — Apartados 11-12, A11-A14</b></div>El auditor puede realizar pruebas en una <span class="detail-highlight">fecha intermedia</span> o al <span class="detail-highlight">cierre del periodo</span>.<br><br><b>📈 Relación con el riesgo:</b><br>Cuanto <b>mayor</b> es el riesgo de incorrección material:<br>• Más probable que se apliquen procedimientos al <b>cierre</b><br>• Mayor probabilidad de procedimientos <b>sin previo aviso</b><br>• Especialmente relevante ante riesgos de <b>fraude</b><br><br><b>🔒 Procedimientos que SOLO se aplican al cierre:</b><br>• Concordancia de estados financieros con registros contables<br>• Examen de ajustes del diario realizados en el cierre<br>• Verificación de contratos de venta existentes al cierre<br>• Revisión de revelaciones y notas a los estados financieros<br><br><b>✅ Ventaja de fecha intermedia:</b><br>Facilita identificar cuestiones significativas en fase temprana, permitiendo su resolución con la ayuda de la dirección.'
+            },
+            {
+                key: 'proc3',
+                group: 'proc',
+                title: '📏 Extensión (Tamaño de Muestra)',
+                badge: 'Procedimientos de Auditoría',
+                headerColor: 'linear-gradient(135deg, #17a2b8, #138496)',
+                content: '<div class="detail-section"><b>📌 NIA 330 — Apartados A15-A16</b></div>La extensión se refiere al <span class="detail-highlight">volumen cuantitativo</span> de lo que debe realizarse: tamaño de muestra, número de observaciones, alcance de las pruebas.<br><br><b>📐 Regla general:</b><br>A <b>mayor</b> riesgo de incorrección material → <b>mayor</b> extensión de pruebas.<br><br><b>🔍 Ejemplos de ampliación:</b><br>• Incrementar tamaño de muestras ante riesgo de fraude<br>• Aplicar procedimientos analíticos más detallados y frecuentes<br>• Usar <b>TAAO</b> (técnicas de auditoría asistidas por ordenador) para probar <b>poblaciones completas</b> en lugar de muestras<br>• Aumentar número de ubicaciones incluidas en el alcance<br><br><b>⚠️ Limitación crítica:</b><br>Ampliar la extensión <b>solo es eficaz</b> si el procedimiento en sí es <b>relevante</b> para el riesgo específico. Una muestra más grande de un procedimiento inadecuado no proporciona mejor evidencia.<br><br><b>🤖 Controles automatizados:</b><br>Debido a la congruencia inherente del procesamiento por TI, puede que no sea necesario ampliar la extensión de pruebas de controles automatizados.'
+            },
+            {
+                key: 'control1',
+                group: 'control',
+                title: '✅ ¿Cuándo Probar los Controles?',
+                badge: 'Pruebas de Controles',
+                headerColor: 'linear-gradient(135deg, #ff6b6b, #ee5a5a)',
+                content: '<div class="detail-section"><b>📌 NIA 330 — Apartado 8</b></div>El auditor <b>debe</b> realizar pruebas de controles cuando se cumple <span class="detail-highlight">ALGUNA</span> de estas dos condiciones:<br><br><b>Condición (a):</b><br>La valoración de riesgos comporta la <b>expectativa de que los controles operen eficazmente</b>. Es decir, el auditor planea <b>confiar</b> en ellos para determinar la naturaleza, momento y extensión de procedimientos sustantivos.<br><br><b>Condición (b):</b><br>Los <b>procedimientos sustantivos por sí solos</b> no pueden proporcionar evidencia suficiente y adecuada.<br><br><b>💻 Ejemplo de (b):</b><br>Una entidad que lleva a cabo sus actividades utilizando TI y <b>no prepara ni conserva documentación</b> de las transacciones distinta a la del sistema de TI. En este caso, sin probar los controles de TI, el auditor no puede obtener evidencia suficiente.<br><br><b>🎯 Apartado 9:</b><br>Cuanto más confíe el auditor en la eficacia de un control, más convincente debe ser la evidencia que obtenga sobre su funcionamiento.'
+            },
+            {
+                key: 'control2',
+                group: 'control',
+                title: '🔧 Eficacia Operativa de Controles',
+                badge: 'Pruebas de Controles',
+                headerColor: 'linear-gradient(135deg, #ff6b6b, #ee5a5a)',
+                content: '<div class="detail-section"><b>📌 NIA 330 — Apartados 9-10, A25-A31</b></div>Para evaluar la eficacia operativa, el auditor debe obtener evidencia sobre tres aspectos clave:<br><br><b>1️⃣ Cómo se aplicaron</b> los controles en momentos relevantes del periodo<br><b>2️⃣ Congruencia</b> en su aplicación (¿se aplicaron siempre igual?)<br><b>3️⃣ Quién</b> los aplicó y <b>con qué medios</b><br><br><b>🔬 Procedimientos combinados (Apartado 10):</b><br>• <b>Indagación + inspección:</b> Mayor seguridad que indagación sola<br>• <b>Indagación + observación:</b> Solo válida en el momento observado<br>• <b>Indagación + reejecución:</b> Máximo nivel de seguridad<br><br><b>⚠️ Indagación sola NO es suficiente</b> para probar eficacia operativa (A26).<br><br><b>🔗 Controles indirectos:</b><br>Si el control depende de otros (ej: un informe de excepciones depende de controles generales de TI), el auditor debe probar también los controles indirectos.'
+            },
+            {
+                key: 'control3',
+                group: 'control',
+                title: '🚨 Riesgos Significativos y Controles',
+                badge: 'Pruebas de Controles',
+                headerColor: 'linear-gradient(135deg, #ff6b6b, #ee5a5a)',
+                content: '<div class="detail-section"><b>📌 NIA 330 — Apartado 15</b></div>Cuando el auditor tenga previsto confiar en controles sobre un <span class="detail-highlight">riesgo significativo</span>, <b>debe</b> realizar pruebas sobre dichos controles <span class="detail-highlight">en el periodo actual</span>.<br><br><b>🚫 NO puede usar evidencia de auditorías anteriores</b> para controles sobre riesgos significativos.<br><br><b>📋 Evaluación de desviaciones (Apartado 17):</b><br>Si se detectan desviaciones en controles en los que se confía:<br>• <b>Investigar</b> las causas y consecuencias potenciales<br>• Determinar si las pruebas proporcionan <b>base adecuada</b> para confiar<br>• Evaluar si se necesitan <b>pruebas adicionales</b><br>• Considerar responder con <b>procedimientos sustantivos adicionales</b><br><br><b>⚠️ Apartado 16 — Advertencia crucial:</b><br>La <b>ausencia</b> de incorrecciones detectadas mediante procedimientos sustantivos <b>NO constituye evidencia</b> de que los controles relacionados sean eficaces. Los controles deben probarse directamente.'
+            },
+            {
+                key: 'sust1',
+                group: 'sust',
+                title: '📊 Pruebas de Detalle',
+                badge: 'Procedimientos Sustantivos',
+                headerColor: 'linear-gradient(135deg, #17a2b8, #138496)',
+                content: '<div class="detail-section"><b>📌 NIA 330 — Apartados 18-21, A42-A47</b></div>Los procedimientos sustantivos son <span class="detail-highlight">OBLIGATORIOS</span> para cada tipo de transacción, saldo contable e información a revelar material, <b>independientemente</b> de los riesgos valorados.<br><br><b>🎯 Tipos de pruebas de detalle según la afirmación:</b><br><br><b>Existencia / Ocurrencia:</b><br>• Seleccionar partidas <b>incluidas</b> en los EE.FF.<br>• Obtener evidencia de que existen / ocurrieron<br><br><b>Integridad:</b><br>• Seleccionar partidas que <b>deberían estar</b> incluidas<br>• Investigar si efectivamente están registradas<br><br><b>🚨 Riesgos significativos (Apartado 21):</b><br>Si el enfoque de un riesgo significativo es <b>únicamente sustantivo</b>, debe incluir <b>pruebas de detalle</b>. No bastan solo procedimientos analíticos para responder a riesgos significativos.<br><br><b>📌 Apartado 20:</b><br>Los procedimientos sustantivos incluyen obligatoriamente la comprobación de concordancia de EE.FF. con registros y el examen de ajustes del diario.'
+            },
+            {
+                key: 'sust2',
+                group: 'sust',
+                title: '📈 Procedimientos Analíticos Sustantivos',
+                badge: 'Procedimientos Sustantivos',
+                headerColor: 'linear-gradient(135deg, #17a2b8, #138496)',
+                content: '<div class="detail-section"><b>📌 NIA 330 — Apartados A43-A44</b></div>Los procedimientos analíticos sustantivos son generalmente más adecuados para <span class="detail-highlight">grandes volúmenes</span> de transacciones <span class="detail-highlight">previsibles</span> en el tiempo.<br><br><b>✅ ¿Cuándo pueden ser suficientes solos?</b><br>Cuando el riesgo se valora como "más bajo" debido a las <b>características específicas</b> de las transacciones (sin considerar controles) y las transacciones son:<br>• Uniformes y no complejas<br>• Procesadas rutinariamente por el sistema de información<br>• Con histórico estable y predecible<br><br><b>⚠️ Limitación importante:</b><br>Si el riesgo bajo se debe a <b>controles</b>, el auditor DEBE probar dichos controles (Apartado 8a). No puede basar una valoración baja en controles sin probarlos.<br><br><b>📚 Referencia:</b> Véase <b>NIA 520</b> para orientación adicional sobre procedimientos analíticos.'
+            },
+            {
+                key: 'sust3',
+                group: 'sust',
+                title: '📨 Confirmaciones Externas',
+                badge: 'Procedimientos Sustantivos',
+                headerColor: 'linear-gradient(135deg, #17a2b8, #138496)',
+                content: '<div class="detail-section"><b>📌 NIA 330 — Apartados 19, A48-A51</b></div>El auditor debe <span class="detail-highlight">considerar</span> si deben aplicarse procedimientos de confirmación externa como procedimientos sustantivos.<br><br><b>📋 Casos comunes de confirmación:</b><br>• <b>Saldos bancarios</b> y otra información de relaciones con bancos<br>• <b>Cuentas por cobrar</b> (saldos y términos)<br>• <b>Existencias</b> en depósito aduanero o en consignación<br>• <b>Títulos de propiedad</b> en custodia de abogados<br>• <b>Inversiones</b> custodiadas por terceros<br>• <b>Deudas</b> con prestamistas (condiciones y cláusulas)<br>• <b>Cuentas por pagar</b><br><br><b>🔍 Fiabilidad de las respuestas:</b><br>Mayor cuando la parte confirmante:<br>• Tiene <b>conocimiento</b> de la materia objeto de confirmación<br>• Tiene <b>capacidad y voluntad</b> de responder<br>• Es <b>objetiva</b> (no vinculada a la entidad)<br><br><b>💡 Tip:</b> Las confirmaciones de saldos bancarias a menudo incluyen información relevante para otras afirmaciones.'
+            },
+            {
+                key: 'eval',
+                group: 'eval',
+                title: '📊 Evaluación de Evidencia y Documentación',
+                badge: 'Cierre de la Auditoría',
+                headerColor: 'linear-gradient(135deg, #e74c3c, #c0392b)',
+                content: '<div class="detail-section"><b>📌 NIA 330 — Apartados 24-30, A59-A63</b></div><br><b>🎨 Evaluación de la presentación (Apartado 24):</b><br>• Clasificación y descripción adecuada de la información<br>• Presentación, estructura y contenido conforme al marco de información financiera aplicable<br>• Terminología, grado de detalle, agregación/desagregación<br><br><b>🔍 Evaluación de evidencia (Apartados 25-27):</b><br>• ¿La valoración de riesgos <b>sigue siendo adecuada</b>?<br>• ¿Se obtuvo evidencia <b>suficiente y adecuada</b>?<br>• Considerar <b>toda</b> la evidencia, incluso la que <b>contradice</b> las afirmaciones<br>• Si no hay suficiente evidencia → <b>opinión con salvedades o denegación</b><br><br><b>📝 Documentación obligatoria (Apartados 28-30):</b><br>• Respuestas globales y procedimientos aplicados<br>• <b>Conexión</b> entre procedimientos y riesgos valorados<br>• Resultados de los procedimientos y conclusiones<br>• Concordancia entre EE.FF. y registros contables (incluidas revelaciones)'
+            }
+        ];
+
+        let currentIndex = 0;
+        let currentGroup = null;
+        let groupIndices = [];
+        let activeBranch = null;
+
+        function getGroupIndices(group) {
+            return details.map((d, i) => d.group === group ? i : -1).filter(i => i !== -1);
+        }
+
+        function openGroup(group) {
+            currentGroup = group;
+            groupIndices = getGroupIndices(group);
+            currentIndex = groupIndices[0];
+            openPanel();
+            toggleBranch(group);
+        }
+
+        function toggleBranch(branch) {
+            const allChildren = document.querySelectorAll('.global-child, .proc-child, .control-child, .sust-child');
+            const branchChildren = document.querySelectorAll('.' + branch + '-child');
+            
+            if (activeBranch === branch) {
+                branchChildren.forEach(el => el.style.opacity = '0.3');
+                activeBranch = null;
+            } else {
+                allChildren.forEach(el => el.style.opacity = '0.3');
+                branchChildren.forEach(el => el.style.opacity = '1');
+                activeBranch = branch;
+            }
+        }
+
+        function showDetail(key) {
+            const index = details.findIndex(d => d.key === key);
+            if (index !== -1) {
+                currentIndex = index;
+                currentGroup = details[index].group;
+                groupIndices = getGroupIndices(currentGroup);
+                openPanel();
+            }
+        }
+
+        function openPanel() {
+            const panel = document.getElementById('side-panel');
+            const blur = document.getElementById('blur-overlay');
+            const detail = details[currentIndex];
+            
+            document.getElementById('panel-title').innerHTML = detail.title;
+            document.getElementById('panel-badge').textContent = detail.badge;
+            document.getElementById('panel-header').style.background = detail.headerColor;
+            document.getElementById('panel-content').innerHTML = detail.content;
+            
+            updateNavButtons();
+            updateNavDots();
+            
+            blur.style.display = 'block';
+            panel.style.display = 'block';
+            setTimeout(() => {
+                panel.classList.add('open');
+            }, 10);
+        }
+
+        function closePanel() {
+            const panel = document.getElementById('side-panel');
+            const blur = document.getElementById('blur-overlay');
+            
+            panel.classList.remove('open');
+            setTimeout(() => {
+                panel.style.display = 'none';
+                blur.style.display = 'none';
+            }, 400);
+        }
+
+        function navigate(direction) {
+            const currentPosInGroup = groupIndices.indexOf(currentIndex);
+            const newPosInGroup = currentPosInGroup + direction;
+            
+            if (newPosInGroup >= 0 && newPosInGroup < groupIndices.length) {
+                currentIndex = groupIndices[newPosInGroup];
+                
+                const content = document.getElementById('panel-content');
+                content.style.opacity = '0';
+                content.style.transition = 'opacity 0.2s';
+                
+                setTimeout(() => {
+                    const detail = details[currentIndex];
+                    document.getElementById('panel-title').innerHTML = detail.title;
+                    document.getElementById('panel-badge').textContent = detail.badge;
+                    document.getElementById('panel-header').style.background = detail.headerColor;
+                    document.getElementById('panel-content').innerHTML = detail.content;
+                    content.style.opacity = '1';
+                    updateNavButtons();
+                    updateNavDots();
+                }, 200);
+            }
+        }
+
+        function updateNavButtons() {
+            const currentPosInGroup = groupIndices.indexOf(currentIndex);
+            const prevBtn = document.getElementById('btn-prev');
+            const nextBtn = document.getElementById('btn-next');
+            
+            prevBtn.disabled = currentPosInGroup === 0;
+            nextBtn.disabled = currentPosInGroup === groupIndices.length - 1;
+            
+            document.getElementById('panel-counter').textContent = (currentPosInGroup + 1) + ' de ' + groupIndices.length;
+        }
+
+        function updateNavDots() {
+            const dotsContainer = document.getElementById('nav-dots');
+            const currentPosInGroup = groupIndices.indexOf(currentIndex);
+            dotsContainer.innerHTML = '';
+            
+            for (let i = 0; i < groupIndices.length; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'nav-dot' + (i === currentPosInGroup ? ' active' : '');
+                dotsContainer.appendChild(dot);
+            }
+        }
+
+        function resetAll() {
+            document.querySelectorAll('.global-child, .proc-child, .control-child, .sust-child').forEach(el => el.style.opacity = '1');
+            activeBranch = null;
+        }
+
+        // Close panel on escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closePanel();
+            }
+        });
+    </script>
+</body>
+</html>"""
+
+with open('/mnt/agents/output/mapa_mental_nia330.html', 'w', encoding='utf-8') as f:
+    f.write(html_content)
+
+print("Archivo HTML guardado exitosamente")
+print(f"Tamaño: {len(html_content)} caracteres")
